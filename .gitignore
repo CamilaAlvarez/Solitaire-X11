@@ -33,4 +33,4 @@
 
 !tests/*.cpp
 !tests/Makefile
-tests
+run_tests
