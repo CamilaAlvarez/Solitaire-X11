@@ -140,6 +140,14 @@ namespace
         ASSERT_THROW(mDeck->extractNCards(DECK_SIZE + 1), std::invalid_argument);
     }
 
+    TEST_F(DeckTest, RecoverAllCards)
+    {
+        mDeck->extractNCards(DECK_SIZE);
+        EXPECT_THROW(mDeck->extractNCards(1), std::invalid_argument);
+        mDeck->recoverAllCards();
+        EXPECT_NO_THROW(mDeck->extractNCards(1));
+    }
+
     TEST_F(DeckTest, ShuffleDeck)
     {
         const solitaire::Card *card1 = mCards[0];

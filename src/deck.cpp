@@ -41,21 +41,27 @@ namespace solitaire
         mCards = cards;
         std::random_device rd;
         mRandomGenerator = std::mt19937(rd());
+        mCurrentIndex = 0;
     }
 
     std::vector<const Card *> Deck::extractNCards(unsigned int numberOfCards)
     {
-        if (numberOfCards > mCards.size())
+        if ((numberOfCards + mCurrentIndex) > mCards.size())
         {
             throw std::invalid_argument("Deck: Invalid number of cards");
         }
-        std::vector<const Card *> pickedCards = std::vector<const Card *>(mCards.begin(), mCards.begin() + numberOfCards);
-        mCards.erase(mCards.begin(), mCards.begin() + numberOfCards); // We know mCards is of size a small number!
+        std::vector<const Card *> pickedCards = std::vector<const Card *>(mCards.begin() + mCurrentIndex, mCards.begin() + mCurrentIndex + numberOfCards);
+        mCurrentIndex += numberOfCards;
         return pickedCards;
     }
 
     void Deck::shuffle()
     {
         std::shuffle(mCards.begin(), mCards.end(), mRandomGenerator);
+    }
+
+    void Deck::recoverAllCards()
+    {
+        mCurrentIndex = 0;
     }
 }

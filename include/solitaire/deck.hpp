@@ -28,7 +28,7 @@ namespace solitaire
          * @brief Shuffle the deck. Shuffling several times should return different results
          *
          */
-        void shuffle();
+        virtual void shuffle();
         /**
          * @brief Get a vector with N cards and remove them from the deck
          *
@@ -37,6 +37,18 @@ namespace solitaire
          * @throw std::invalid_argument when numberOfCards exceeds the current size of the deck
          */
         std::vector<const Card *> extractNCards(unsigned int numberOfCards);
+        /**
+         * @brief Resets the decks, so we can start extracting cards from the top again
+         *
+         */
+        void recoverAllCards();
+        /**
+         * @brief Destroy the Deck object
+         *
+         */
+        virtual ~Deck()
+        {
+        }
 
     private:
         /**
@@ -49,6 +61,11 @@ namespace solitaire
          *
          */
         std::mt19937 mRandomGenerator;
+        /**
+         * @brief First card to extract in the next extractNCards
+         *
+         */
+        unsigned int mCurrentIndex;
     };
 }
 
