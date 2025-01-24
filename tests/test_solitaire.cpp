@@ -89,8 +89,8 @@ namespace
             solitaire::Card *card49 = new solitaire::Card(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::N10);
             solitaire::Card *card50 = new solitaire::Card(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::J);
             solitaire::Card *card45 = new solitaire::Card(solitaire::Card::Suit::Spades, solitaire::Card::Rank::K);
-            std::vector<const solitaire::Card *> hiddenColumn6 = {card46, card47, card48, card49, card50, card44};
-            mColumns.push_back(new solitaire::Column(card45, hiddenColumn6, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column6));
+            std::vector<const solitaire::Card *> hiddenColumn6 = {card46, card47, card48, card49, card50, card45};
+            mColumns.push_back(new solitaire::Column(card44, hiddenColumn6, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column6));
 
             mCards = {card1, card2, card3, card4, card5, card6, card7, card8, card9, card10, card11, card12, card13, card14,
                       card15, card16, card17, card18, card19, card20, card21, card22, card23, card24, card25, card26, card27, card28,
@@ -123,8 +123,6 @@ namespace
         solitaire::StockPile *mStockpile;
         std::vector<solitaire::Foundation *> mFoundations;
         std::vector<solitaire::Column *> mColumns;
-
-    private:
         std::vector<const solitaire::Card *> mCards;
     };
 
@@ -153,11 +151,6 @@ namespace
         ASSERT_TRUE(mGame->moveCard(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column2, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column4));
     }
 
-    TEST_F(SolitaireTest, MoveCardValidLocationValidMove2)
-    {
-        ASSERT_TRUE(mGame->moveCard(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column3, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column6));
-    }
-
     TEST_F(SolitaireTest, MoveCardValidLocationInvalidMove)
     {
         ASSERT_FALSE(mGame->moveCard(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column0, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column1));
@@ -178,6 +171,23 @@ namespace
     {
         EXPECT_THROW(mGame->moveCard(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column6, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::WastePile),
                      std::invalid_argument);
+    }
+
+    TEST_F(SolitaireTest, MoveNCardsValidLocationValidMove)
+    {
+        ASSERT_TRUE(mGame->moveNCards(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column2, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column4, 1));
+    }
+
+    TEST_F(SolitaireTest, MoveNCardsValidLocationValidMove2)
+    {
+        ASSERT_TRUE(mGame->moveNCards(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column2, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column4, 1));
+        ASSERT_TRUE(mGame->moveNCards(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column4, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column6, 2));
+    }
+
+    TEST_F(SolitaireTest, MoveMCardsValidLocationInvalidMove)
+    {
+        ASSERT_FALSE(mGame->moveNCards(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column4, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column2, 1));
+        EXPECT_THROW(mGame->moveNCards(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column0, solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Foundation0, 1), std::invalid_argument);
     }
 
     TEST_F(SolitaireTest, RevealFromStockPileNotEmpty)
@@ -486,5 +496,18 @@ namespace
     TEST_F(SolitaireTest, checkStatusPlaying)
     {
         ASSERT_EQ(mGame->checkGameStatus(), solitaire::Solitaire::GameStatus::Playing);
+    }
+
+    TEST_F(SolitaireTest, GetTopNCards)
+    {
+        std::vector<const solitaire::Card *> cards = mGame->getTopNCards(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Column0, 1);
+        ASSERT_EQ(*cards[0], *mCards[24]);
+        ASSERT_EQ(cards.size(), 1);
+    }
+
+    TEST_F(SolitaireTest, GetTopNCardsInvalidLocation)
+    {
+        EXPECT_THROW(mGame->getTopNCards(solitaire::FaceUpCardLocation::FaceUpCardLocationCode::Foundation0, 2), std::invalid_argument);
+        EXPECT_THROW(mGame->getTopNCards((solitaire::FaceUpCardLocation::FaceUpCardLocationCode)25, 1), std::invalid_argument);
     }
 }

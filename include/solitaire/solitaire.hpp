@@ -63,6 +63,19 @@ namespace solitaire
          */
         bool moveCard(FaceUpCardLocation::FaceUpCardLocationCode from, FaceUpCardLocation::FaceUpCardLocationCode to);
         /**
+         * @brief Move N cards from one column to the other
+         *
+         * @param from
+         * @param to
+         * @param n
+         * @return true if the card could be moved
+         * @return false otherwise
+         * @throw std::invalid_argument when passed an invalid location, or it is not a column
+         * @throw std::invalid_argument when to location is the waste pile
+         * @throw std::invalid_argument when from location is not column and n > 1
+         */
+        bool moveNCards(FaceUpCardLocation::FaceUpCardLocationCode from, FaceUpCardLocation::FaceUpCardLocationCode to, int n);
+        /**
          * @brief Get the top card from a location
          *
          * @param from
@@ -100,6 +113,25 @@ namespace solitaire
          * @throw std::invalid_argument when passed an invalid location
          */
         unsigned int getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode from) const;
+        /**
+         * @brief Returns the top card n cards from a column
+         *
+         * @param from
+         * @param n
+         * @return const Card*
+         * @throw std::runtime_error when there is no active game
+         * @throw std::invalid_argument when the location is not valid, or n > 1 and from not a column
+         */
+        std::vector<const Card *> getTopNCards(FaceUpCardLocation::FaceUpCardLocationCode from, unsigned int n) const;
+        /**
+         * @brief Get the number of hidden cards from a specific location
+         *
+         * @param from
+         * @return unsigned int
+         * @throw std::runtime_error when there is no active game
+         * @throw std::invalid_argument when the location is not valid
+         */
+        unsigned int getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode from) const;
 
     private:
         struct CardStatus

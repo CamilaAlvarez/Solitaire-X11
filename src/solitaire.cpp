@@ -425,4 +425,196 @@ namespace solitaire
             throw std::invalid_argument("Solitaire: invalid location for getNumberOfPlayedCardsFrom");
         }
     }
+    std::vector<const Card *> Solitaire::getTopNCards(FaceUpCardLocation::FaceUpCardLocationCode from, unsigned int n) const
+    {
+        FaceUpCardLocation *location;
+        switch (from)
+        {
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column0:
+            return mColumns[0]->getTopNCards(n);
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column1:
+            return mColumns[1]->getTopNCards(n);
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column2:
+            return mColumns[2]->getTopNCards(n);
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column3:
+            return mColumns[3]->getTopNCards(n);
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column4:
+            return mColumns[4]->getTopNCards(n);
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column5:
+            return mColumns[5]->getTopNCards(n);
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column6:
+            return mColumns[6]->getTopNCards(n);
+        case FaceUpCardLocation::FaceUpCardLocationCode::WastePile:
+            location = mWastepile;
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation0:
+            location = mFoundations[0];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation1:
+            location = mFoundations[1];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation2:
+            location = mFoundations[2];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation3:
+            location = mFoundations[3];
+            break;
+        default:
+            throw std::invalid_argument("Solitaire: Invalid location");
+        }
+        if (n > 1)
+        {
+            throw std::invalid_argument("Solitaire: Invalid location");
+        }
+        std::vector<const Card *> cards;
+        std::optional<const Card *> topCard = location->getTopCard();
+        if (topCard.has_value())
+        {
+            cards.push_back(topCard.value());
+        }
+        return cards;
+    }
+    bool Solitaire::moveNCards(FaceUpCardLocation::FaceUpCardLocationCode from, FaceUpCardLocation::FaceUpCardLocationCode to, int n)
+    {
+        Column *fromLocation, *toLocation;
+        bool toLocationIsColumn = true, toLocationInFoundation = false;
+
+        switch (from)
+        {
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation0:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation1:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation2:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation3:
+        case FaceUpCardLocation::FaceUpCardLocationCode::WastePile:
+            throw std::invalid_argument("Solitaire: invalid location from moveNCards");
+
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column0:
+            fromLocation = mColumns[0];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column1:
+            fromLocation = mColumns[1];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column2:
+            fromLocation = mColumns[2];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column3:
+            fromLocation = mColumns[3];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column4:
+            fromLocation = mColumns[4];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column5:
+            fromLocation = mColumns[5];
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column6:
+            fromLocation = mColumns[6];
+            break;
+        default:
+            throw std::invalid_argument("Solitaire: invalid location from moveNCards");
+        }
+        switch (to)
+        {
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation0:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation1:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation2:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation3:
+            throw std::invalid_argument("Solitaire: invalid location to moveNCards");
+        case FaceUpCardLocation::FaceUpCardLocationCode::WastePile:
+            throw std::invalid_argument("Solitaire:: cannot move card to wastepile");
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column0:
+            toLocation = mColumns[0];
+            toLocationIsColumn = true;
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column1:
+            toLocation = mColumns[1];
+            toLocationIsColumn = true;
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column2:
+            toLocation = mColumns[2];
+            toLocationIsColumn = true;
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column3:
+            toLocation = mColumns[3];
+            toLocationIsColumn = true;
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column4:
+            toLocation = mColumns[4];
+            toLocationIsColumn = true;
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column5:
+            toLocation = mColumns[5];
+            toLocationIsColumn = true;
+            break;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column6:
+            toLocation = mColumns[6];
+            toLocationIsColumn = true;
+            break;
+
+        default:
+            throw std::invalid_argument("Solitaire: invalid location to moveCard");
+        }
+        // Get the top n cards from the from location
+        std::vector<const Card *> topCardsFrom = getTopNCards(from, n);
+        // If the from location is empty we return false
+        if (topCardsFrom.empty())
+        {
+            return false;
+        }
+        const Card *card = topCardsFrom.front();
+        // Check if the card can be added in the to location
+        bool canAddCard = toLocation->canPlayCardOnTop(card);
+        if (!canAddCard)
+        {
+            return false;
+        }
+        // If it can be added we remove it from the from location
+        fromLocation->removeTopNCards(n);
+        std::optional<const Card *> newTopCardFrom = fromLocation->getTopCard();
+        if (newTopCardFrom.has_value())
+        {
+            mCardStatuses[newTopCardFrom.value()->cardCode()].onTop = true;
+            // in the case a hidden card became the top card
+            mCardStatuses[newTopCardFrom.value()->cardCode()].revealed = true;
+        }
+        std::optional<const Card *> topCardTo = toLocation->getTopCard();
+        if (topCardTo.has_value())
+        {
+            mCardStatuses[topCardTo.value()->cardCode()].onTop = false;
+        }
+        // now we add it to the to location
+        toLocation->addCardsToColumn(topCardsFrom);
+        const Card *newTopCard = topCardsFrom.back();
+        mCardStatuses[newTopCard->cardCode()].onTop = true;
+        mCardStatuses[newTopCard->cardCode()].onColumn = toLocationIsColumn;
+        mCardStatuses[newTopCard->cardCode()].onFoundation = toLocationInFoundation;
+        return true;
+    }
+    unsigned int Solitaire::getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode from) const
+    {
+        switch (from)
+        {
+        case FaceUpCardLocation::FaceUpCardLocationCode::WastePile:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation0:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation1:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation2:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation3:
+            return 0;
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column0:
+            return mColumns[0]->getNumberHiddenCards();
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column1:
+            return mColumns[1]->getNumberHiddenCards();
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column2:
+            return mColumns[2]->getNumberHiddenCards();
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column3:
+            return mColumns[3]->getNumberHiddenCards();
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column4:
+            return mColumns[4]->getNumberHiddenCards();
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column5:
+            return mColumns[5]->getNumberHiddenCards();
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column6:
+            return mColumns[6]->getNumberHiddenCards();
+        default:
+            throw std::invalid_argument("Solitaire: Invalid location");
+        }
+    }
 }

@@ -62,7 +62,7 @@ namespace solitaire
          */
         unsigned int getNumberHiddenCards() const;
         /**
-         * @brief Add cards to the end op the visible cards
+         * @brief Add cards to the end of the visible cards
          *
          * @param cards
          */
