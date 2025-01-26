@@ -68,6 +68,11 @@ namespace solitaire
          */
         void drawColumns();
         /**
+         * @brief Draws the restart button in the screen
+         *
+         */
+        void drawRestartButton();
+        /**
          * @brief Reacts to a click on the stock pile
          *
          */

@@ -34,3 +34,4 @@
 !tests/*.cpp
 !tests/Makefile
 run_tests
+run_game

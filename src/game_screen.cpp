@@ -14,7 +14,7 @@
 #define SCREEN_TITLE "Camila's X11 Solitaire"
 #define ICON_NAME "SOLITAIRE"
 #define SCREEN_WIDTH 1400
-#define SCREEN_HEIGHT 750
+#define SCREEN_HEIGHT 850
 #define CARD_HEIGHT 250
 #define CARD_WIDTH 180
 // Estimated char dimensions
@@ -22,13 +22,17 @@
 #define CHAR_HEIGHT 3
 #define SEPARATION 20
 #define STOCKPILE_X 10
-#define STOCKPILE_Y 10
+#define STOCKPILE_Y 100
 #define WASTEPILE_X (STOCKPILE_X + CARD_WIDTH + SEPARATION)
 #define WASTEPILE_Y STOCKPILE_Y
 #define FOUNDATION_X (WASTEPILE_X + 2 * CARD_WIDTH + 2 * SEPARATION)
 #define FOUNDATION_Y STOCKPILE_Y
 #define COLUMNS_X STOCKPILE_X
 #define COLUMNS_Y (STOCKPILE_Y + 2 * SEPARATION + CARD_HEIGHT)
+#define RESTART_X 1190
+#define RESTART_Y 20
+#define RESTART_BUTTON_WIDTH 200
+#define RESTART_BUTTON_HEIGHT 50
 #define HIDDEN_CARD_HEIGHT 30
 
 namespace solitaire
@@ -70,6 +74,7 @@ namespace solitaire
         while (XNextEvent(mDisplay, &ev) == 0)
         {
             drawTableau();
+            drawRestartButton();
         }
         XUnmapWindow(mDisplay, mWindow);
         XDestroyWindow(mDisplay, mWindow);
@@ -215,14 +220,29 @@ namespace solitaire
         drawColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column6,
                    mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column6), COLUMNS_X + 6 * (CARD_WIDTH + SEPARATION), COLUMNS_Y);
     }
-    void GameScreen::onClickStockPile() {}
-    void GameScreen::onClickWastePile() {}
-    void GameScreen::onClickFoundation(unsigned int foundationNumber) {}
-    void GameScreen::onClickColumn(unsigned int columnNumber) {}
-    void GameScreen::onClickRestart() {}
     void GameScreen::drawEmptyCardSpot(unsigned int topLeftX, unsigned int topLeftY)
     {
         XSetForeground(mDisplay, mContext, mBlack);
         XDrawRectangle(mDisplay, mWindow, mContext, topLeftX, topLeftY, CARD_WIDTH, CARD_HEIGHT);
     }
+    void GameScreen::drawRestartButton()
+    {
+        char const *buttonText = "Restart game";
+        XTextItem textItem;
+        textItem.delta = 2;
+        textItem.font = None;
+        textItem.chars = (char *)buttonText;
+        textItem.nchars = strlen(buttonText);
+
+        int textX = RESTART_X + RESTART_BUTTON_WIDTH / 2 - strlen(buttonText) * CHAR_WIDTH;
+        int textY = RESTART_Y + RESTART_BUTTON_HEIGHT / 2 - CHAR_WIDTH;
+        XDrawText(mDisplay, mWindow, mContext, textX, textY, &textItem, 1);
+        // Draw the rectangle
+        XDrawRectangle(mDisplay, mWindow, mContext, RESTART_X, RESTART_Y, RESTART_BUTTON_WIDTH, RESTART_BUTTON_HEIGHT);
+    }
+    void GameScreen::onClickStockPile() {}
+    void GameScreen::onClickWastePile() {}
+    void GameScreen::onClickFoundation(unsigned int foundationNumber) {}
+    void GameScreen::onClickColumn(unsigned int columnNumber) {}
+    void GameScreen::onClickRestart() {}
 }
