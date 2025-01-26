@@ -10,6 +10,7 @@
 #include <X11/Xos.h>
 #include <cstring>
 #include <optional>
+#include <iostream>
 
 #define SCREEN_TITLE "Camila's X11 Solitaire"
 #define ICON_NAME "SOLITAIRE"
@@ -18,8 +19,10 @@
 #define CARD_HEIGHT 250
 #define CARD_WIDTH 180
 // Estimated char dimensions
-#define CHAR_WIDTH 3
+#define CHAR_WIDTH 5
 #define CHAR_HEIGHT 3
+#define NUMBER_LOCATION_TOP 20
+#define NUMBER_LOCATION_RIGHT 10
 #define SEPARATION 20
 #define STOCKPILE_X 10
 #define STOCKPILE_Y 100
@@ -73,6 +76,11 @@ namespace solitaire
         mGame->startSolitaire();
         while (XNextEvent(mDisplay, &ev) == 0)
         {
+            if (ev.type == ButtonPress)
+            {
+                int x = ev.xbutton.x, y = ev.xbutton.y;
+                handlePlayerClick(x, y);
+            }
             drawTableau();
             drawRestartButton();
         }
@@ -85,6 +93,9 @@ namespace solitaire
         XTextItem textItem;
         textItem.delta = 2;
         textItem.font = None;
+        // Draw the filled rectangle rectangle
+        XSetForeground(mDisplay, mContext, mWhite);
+        XFillRectangle(mDisplay, mWindow, mContext, topLeftX, topLeftY, CARD_WIDTH, CARD_HEIGHT);
         // Only Hearts and Diamonds use red font
         switch (card->getSuit())
         {
@@ -97,9 +108,11 @@ namespace solitaire
             cardSuitText = "Diamonds";
             break;
         case Card::Suit::Clubs:
+            XSetForeground(mDisplay, mContext, mBlack);
             cardSuitText = "Clubs";
             break;
         case Card::Suit::Spades:
+            XSetForeground(mDisplay, mContext, mBlack);
             cardSuitText = "Spades";
             break;
         }
@@ -145,18 +158,23 @@ namespace solitaire
             cardNumberText = "K";
             break;
         }
+
         // Draw the numbers of the card
         textItem.chars = (char *)cardNumberText;
         textItem.nchars = strlen(cardNumberText);
-        XDrawText(mDisplay, mWindow, mContext, topLeftX + 10, topLeftY + 20, &textItem, 1);
-        XDrawText(mDisplay, mWindow, mContext, topLeftX + CARD_WIDTH - 10 - 10, topLeftY + CARD_HEIGHT - 10 - 5, &textItem, 1);
+        XDrawText(mDisplay, mWindow, mContext, topLeftX + NUMBER_LOCATION_RIGHT, topLeftY + NUMBER_LOCATION_TOP, &textItem, 1);
+        int bottomNumberX = topLeftX + CARD_WIDTH - 2 * NUMBER_LOCATION_RIGHT - strlen(cardNumberText) * CHAR_WIDTH;
+        int bottomNumberY = topLeftY + CARD_HEIGHT - NUMBER_LOCATION_TOP + CHAR_WIDTH;
+        XDrawText(mDisplay, mWindow, mContext, bottomNumberX, bottomNumberY, &textItem, 1);
         // Draw the suit
         textItem.chars = (char *)cardSuitText;
         textItem.nchars = strlen(cardSuitText);
-        XDrawText(mDisplay, mWindow, mContext, topLeftX + CARD_WIDTH / 2 - strlen(cardSuitText) * CHAR_WIDTH, topLeftY + CARD_HEIGHT / 2 - CHAR_WIDTH, &textItem, 1);
-        // Draw the rectangle
+        int suitX = topLeftX + (CARD_WIDTH - strlen(cardSuitText) * CHAR_WIDTH) / 2;
+        int suitY = topLeftY + CARD_HEIGHT / 2 - CHAR_WIDTH;
+        XDrawText(mDisplay, mWindow, mContext, suitX, suitY, &textItem, 1);
+        // Draw the border of the card
         XDrawRectangle(mDisplay, mWindow, mContext, topLeftX, topLeftY, CARD_WIDTH, CARD_HEIGHT);
-        // Reset the foreground color (black is the default)
+        // Reset the foreground color (it might still be red)
         XSetForeground(mDisplay, mContext, mBlack);
     }
     void GameScreen::drawStockPile()
@@ -222,6 +240,8 @@ namespace solitaire
     }
     void GameScreen::drawEmptyCardSpot(unsigned int topLeftX, unsigned int topLeftY)
     {
+        XSetForeground(mDisplay, mContext, mWhite);
+        XFillRectangle(mDisplay, mWindow, mContext, topLeftX, topLeftY, CARD_WIDTH, CARD_HEIGHT);
         XSetForeground(mDisplay, mContext, mBlack);
         XDrawRectangle(mDisplay, mWindow, mContext, topLeftX, topLeftY, CARD_WIDTH, CARD_HEIGHT);
     }
@@ -234,15 +254,151 @@ namespace solitaire
         textItem.chars = (char *)buttonText;
         textItem.nchars = strlen(buttonText);
 
-        int textX = RESTART_X + RESTART_BUTTON_WIDTH / 2 - strlen(buttonText) * CHAR_WIDTH;
-        int textY = RESTART_Y + RESTART_BUTTON_HEIGHT / 2 - CHAR_WIDTH;
+        int textX = RESTART_X + (RESTART_BUTTON_WIDTH - strlen(buttonText) * CHAR_WIDTH) / 2;
+        int textY = RESTART_Y + (RESTART_BUTTON_HEIGHT - CHAR_WIDTH) / 2;
         XDrawText(mDisplay, mWindow, mContext, textX, textY, &textItem, 1);
         // Draw the rectangle
         XDrawRectangle(mDisplay, mWindow, mContext, RESTART_X, RESTART_Y, RESTART_BUTTON_WIDTH, RESTART_BUTTON_HEIGHT);
     }
-    void GameScreen::onClickStockPile() {}
+    void GameScreen::handlePlayerClick(unsigned int x, unsigned int y)
+    {
+        ClickPosition position = parsePlayerClick(x, y);
+        switch (position)
+        {
+        case ClickPosition::StockPile:
+            onClickStockPile();
+            break;
+        case ClickPosition::WastePile:
+            onClickWastePile();
+            break;
+        case ClickPosition::Foundation0:
+            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation0);
+            break;
+        case ClickPosition::Foundation1:
+            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation1);
+            break;
+        case ClickPosition::Foundation2:
+            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation2);
+            break;
+        case ClickPosition::Foundation3:
+            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation3);
+            break;
+        case ClickPosition::Column0:
+            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column0);
+            break;
+        case ClickPosition::Column1:
+            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column1);
+            break;
+        case ClickPosition::Column2:
+            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column2);
+            break;
+        case ClickPosition::Column3:
+            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column3);
+            break;
+        case ClickPosition::Column4:
+            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column4);
+            break;
+        case ClickPosition::Column5:
+            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column5);
+            break;
+        case ClickPosition::Column6:
+            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column6);
+            break;
+        case ClickPosition::RestartButton:
+            onClickRestart();
+            break;
+        case ClickPosition::NoLocation:
+            break;
+        }
+    }
+    bool GameScreen::isClickInBox(unsigned int clickX, unsigned int clickY, unsigned int topLeftX,
+                                  unsigned int topLeftY, unsigned int width, unsigned int height)
+    {
+        return clickX >= topLeftX && clickX <= (topLeftX + width) && clickY >= topLeftY && clickY <= (topLeftY + height);
+    }
+    void GameScreen::onClickStockPile()
+    {
+        if (mGame->isStockPileEmpty())
+        {
+            // refresh stockpile
+        }
+        else
+        {
+            mGame->revealTopStockPile();
+        }
+    }
     void GameScreen::onClickWastePile() {}
-    void GameScreen::onClickFoundation(unsigned int foundationNumber) {}
-    void GameScreen::onClickColumn(unsigned int columnNumber) {}
-    void GameScreen::onClickRestart() {}
+    void GameScreen::onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode code) {}
+    void GameScreen::onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode code) {}
+    void GameScreen::onClickRestart()
+    {
+        mGame->restartSolitaire();
+    }
+    GameScreen::ClickPosition GameScreen::parsePlayerClick(unsigned int x, unsigned int y)
+    {
+        if (isClickInBox(x, y, STOCKPILE_X, STOCKPILE_Y, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::StockPile;
+        }
+        else if (isClickInBox(x, y, WASTEPILE_X, WASTEPILE_Y, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::WastePile;
+        }
+        else if (isClickInBox(x, y, FOUNDATION_X, FOUNDATION_Y, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Foundation0;
+        }
+        else if (isClickInBox(x, y, FOUNDATION_X + CARD_WIDTH + SEPARATION, FOUNDATION_Y, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Foundation1;
+        }
+        else if (isClickInBox(x, y, FOUNDATION_X + 2 * (CARD_WIDTH + SEPARATION), FOUNDATION_Y, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Foundation2;
+        }
+        else if (isClickInBox(x, y, FOUNDATION_X + 3 * (CARD_WIDTH + SEPARATION), FOUNDATION_Y, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Foundation3;
+        }
+        else if (isClickInBox(x, y, COLUMNS_X, COLUMNS_Y, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Column0;
+        }
+        // For the rest of the columns I need to move both x and y, because of the hidden cards
+        int numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column1);
+        if (isClickInBox(x, y, COLUMNS_X + CARD_WIDTH + SEPARATION, COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Column1;
+        }
+        numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column2);
+        if (isClickInBox(x, y, COLUMNS_X + 2 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Column2;
+        }
+        numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column3);
+        if (isClickInBox(x, y, COLUMNS_X + 3 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Column3;
+        }
+        numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column4);
+        if (isClickInBox(x, y, COLUMNS_X + 4 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Column4;
+        }
+        numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column5);
+        if (isClickInBox(x, y, COLUMNS_X + 5 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Column5;
+        }
+        numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column6);
+        if (isClickInBox(x, y, COLUMNS_X + 6 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        {
+            return ClickPosition::Column6;
+        }
+        if (isClickInBox(x, y, RESTART_X, RESTART_Y, RESTART_BUTTON_WIDTH, RESTART_BUTTON_HEIGHT))
+        {
+            return ClickPosition::RestartButton;
+        }
+        return ClickPosition::NoLocation;
+    }
 }

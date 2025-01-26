@@ -17,16 +17,81 @@ namespace solitaire
     class GameScreen
     {
     public:
+        /**
+         * @brief Construct a new Game Screen object
+         *
+         * @param game Game to be displayed
+         */
         GameScreen(Game *game) : mGame(game) {}
-        void drawTableau();
+        /**
+         * @brief Starts the game, and displays it on the game screen
+         *
+         */
         void startGameScreen();
 
     private:
+        /**
+         * @brief Defines the playable area of the screen where the player clicks on
+         *
+         */
+        enum class ClickPosition
+        {
+            StockPile,
+            WastePile,
+            Foundation0,
+            Foundation1,
+            Foundation2,
+            Foundation3,
+            Column0,
+            Column1,
+            Column2,
+            Column3,
+            Column4,
+            Column5,
+            Column6,
+            RestartButton,
+            NoLocation
+        };
+        /**
+         * @brief Parses and handles the user click action
+         *
+         * @param x
+         * @param y
+         */
+        void handlePlayerClick(unsigned int x, unsigned int y);
+        /**
+         * @brief Parses and returns the logical location where the user clicked
+         *
+         * @param x
+         * @param y
+         * @return ClickPosition
+         */
+        GameScreen::ClickPosition parsePlayerClick(unsigned int x, unsigned int y);
+        /**
+         * @brief Checks if click x,y is inside the box with top left
+         * (topLeftX, topLeftY) and width and height
+         *
+         * @param clickX
+         * @param clickY
+         * @param topLeftX
+         * @param topLeftY
+         * @param width
+         * @param height
+         * @return true
+         * @return false
+         */
+        bool isClickInBox(unsigned int clickX, unsigned int clickY, unsigned int topLeftX,
+                          unsigned int topLeftY, unsigned int width, unsigned int height);
         /**
          * @brief Init all necessary screen parameters
          *
          */
         void init();
+        /**
+         * @brief Draws the complete tableu
+         *
+         */
+        void drawTableau();
         /**
          * @brief Draws a card in the window
          *
@@ -85,15 +150,15 @@ namespace solitaire
         /**
          * @brief React to a click on a foundation
          *
-         * @param foundationNumber
+         * @param code of the foundation
          */
-        void onClickFoundation(unsigned int foundationNumber);
+        void onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode code);
         /**
          * @brief Reacts to a click on a column
          *
-         * @param columnNumber
+         * @param code of the column
          */
-        void onClickColumn(unsigned int columnNumber);
+        void onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode code);
         /**
          * @brief Reacts to a click on restart button
          *
