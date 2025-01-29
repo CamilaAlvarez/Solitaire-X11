@@ -197,26 +197,31 @@ namespace
         solitaire::Card cardHearts(solitaire::Card::Suit::Hearts, solitaire::Card::Rank::N9);
         solitaire::Card cardDiamonds(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::N9);
         solitaire::Card cardSpades(solitaire::Card::Suit::Spades, solitaire::Card::Rank::N9);
+
+        solitaire::Card cardClubs2(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N8);
+        solitaire::Card cardHearts2(solitaire::Card::Suit::Hearts, solitaire::Card::Rank::N8);
+        solitaire::Card cardDiamonds2(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::N8);
+        solitaire::Card cardSpades2(solitaire::Card::Suit::Spades, solitaire::Card::Rank::N8);
         // Test for clubs
-        ASSERT_TRUE(cardClubs.isSameSuit(solitaire::Card(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N2)));
-        ASSERT_FALSE(cardClubs.isSameSuit(cardHearts));
-        ASSERT_FALSE(cardClubs.isSameSuit(cardDiamonds));
-        ASSERT_FALSE(cardClubs.isSameSuit(cardSpades));
+        ASSERT_TRUE(cardClubs.isSameSuit(&cardClubs2));
+        ASSERT_FALSE(cardClubs.isSameSuit(&cardHearts));
+        ASSERT_FALSE(cardClubs.isSameSuit(&cardDiamonds));
+        ASSERT_FALSE(cardClubs.isSameSuit(&cardSpades));
         // Test for spades
-        ASSERT_TRUE(cardSpades.isSameSuit(solitaire::Card(solitaire::Card::Suit::Spades, solitaire::Card::Rank::N2)));
-        ASSERT_FALSE(cardSpades.isSameSuit(cardHearts));
-        ASSERT_FALSE(cardSpades.isSameSuit(cardDiamonds));
-        ASSERT_FALSE(cardSpades.isSameSuit(cardClubs));
+        ASSERT_TRUE(cardSpades.isSameSuit(&cardSpades2));
+        ASSERT_FALSE(cardSpades.isSameSuit(&cardHearts));
+        ASSERT_FALSE(cardSpades.isSameSuit(&cardDiamonds));
+        ASSERT_FALSE(cardSpades.isSameSuit(&cardClubs));
         // Test for diamonds
-        ASSERT_TRUE(cardDiamonds.isSameSuit(solitaire::Card(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::N2)));
-        ASSERT_FALSE(cardDiamonds.isSameSuit(cardHearts));
-        ASSERT_FALSE(cardDiamonds.isSameSuit(cardSpades));
-        ASSERT_FALSE(cardDiamonds.isSameSuit(cardClubs));
+        ASSERT_TRUE(cardDiamonds.isSameSuit(&cardDiamonds2));
+        ASSERT_FALSE(cardDiamonds.isSameSuit(&cardHearts));
+        ASSERT_FALSE(cardDiamonds.isSameSuit(&cardSpades));
+        ASSERT_FALSE(cardDiamonds.isSameSuit(&cardClubs));
         // Test for hearts
-        ASSERT_TRUE(cardHearts.isSameSuit(solitaire::Card(solitaire::Card::Suit::Hearts, solitaire::Card::Rank::N2)));
-        ASSERT_FALSE(cardHearts.isSameSuit(cardDiamonds));
-        ASSERT_FALSE(cardHearts.isSameSuit(cardSpades));
-        ASSERT_FALSE(cardHearts.isSameSuit(cardClubs));
+        ASSERT_TRUE(cardHearts.isSameSuit(&cardHearts2));
+        ASSERT_FALSE(cardHearts.isSameSuit(&cardDiamonds));
+        ASSERT_FALSE(cardHearts.isSameSuit(&cardSpades));
+        ASSERT_FALSE(cardHearts.isSameSuit(&cardClubs));
     }
 
     TEST(CardTest, IsOppositeSuit)
@@ -225,26 +230,59 @@ namespace
         solitaire::Card cardHearts(solitaire::Card::Suit::Hearts, solitaire::Card::Rank::N9);
         solitaire::Card cardDiamonds(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::N9);
         solitaire::Card cardSpades(solitaire::Card::Suit::Spades, solitaire::Card::Rank::N9);
+
+        solitaire::Card cardClubs2(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N8);
+        solitaire::Card cardHearts2(solitaire::Card::Suit::Hearts, solitaire::Card::Rank::N8);
+        solitaire::Card cardDiamonds2(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::N8);
+        solitaire::Card cardSpades2(solitaire::Card::Suit::Spades, solitaire::Card::Rank::N8);
         // Test for clubs
-        ASSERT_FALSE(cardClubs.isOppositeColor(solitaire::Card(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N2)));
-        ASSERT_TRUE(cardClubs.isOppositeColor(cardHearts));
-        ASSERT_TRUE(cardClubs.isOppositeColor(cardDiamonds));
-        ASSERT_FALSE(cardClubs.isOppositeColor(cardSpades));
+        ASSERT_FALSE(cardClubs.isOppositeColor(&cardClubs2));
+        ASSERT_TRUE(cardClubs.isOppositeColor(&cardHearts));
+        ASSERT_TRUE(cardClubs.isOppositeColor(&cardDiamonds));
+        ASSERT_FALSE(cardClubs.isOppositeColor(&cardSpades));
         // Test for spades
-        ASSERT_FALSE(cardSpades.isOppositeColor(solitaire::Card(solitaire::Card::Suit::Spades, solitaire::Card::Rank::N2)));
-        ASSERT_TRUE(cardSpades.isOppositeColor(cardHearts));
-        ASSERT_TRUE(cardSpades.isOppositeColor(cardDiamonds));
-        ASSERT_FALSE(cardSpades.isOppositeColor(cardClubs));
+        ASSERT_FALSE(cardSpades.isOppositeColor(&cardSpades2));
+        ASSERT_TRUE(cardSpades.isOppositeColor(&cardHearts));
+        ASSERT_TRUE(cardSpades.isOppositeColor(&cardDiamonds));
+        ASSERT_FALSE(cardSpades.isOppositeColor(&cardClubs));
         // Test for diamonds
-        ASSERT_FALSE(cardDiamonds.isOppositeColor(solitaire::Card(solitaire::Card::Suit::Diamonds, solitaire::Card::Rank::N2)));
-        ASSERT_FALSE(cardDiamonds.isOppositeColor(cardHearts));
-        ASSERT_TRUE(cardDiamonds.isOppositeColor(cardSpades));
-        ASSERT_TRUE(cardDiamonds.isOppositeColor(cardClubs));
+        ASSERT_FALSE(cardDiamonds.isOppositeColor(&cardDiamonds2));
+        ASSERT_FALSE(cardDiamonds.isOppositeColor(&cardHearts));
+        ASSERT_TRUE(cardDiamonds.isOppositeColor(&cardSpades));
+        ASSERT_TRUE(cardDiamonds.isOppositeColor(&cardClubs));
         // Test for hearts
-        ASSERT_FALSE(cardHearts.isOppositeColor(solitaire::Card(solitaire::Card::Suit::Hearts, solitaire::Card::Rank::N2)));
-        ASSERT_FALSE(cardHearts.isOppositeColor(cardDiamonds));
-        ASSERT_TRUE(cardHearts.isOppositeColor(cardSpades));
-        ASSERT_TRUE(cardHearts.isOppositeColor(cardClubs));
+        ASSERT_FALSE(cardHearts.isOppositeColor(&cardHearts2));
+        ASSERT_FALSE(cardHearts.isOppositeColor(&cardDiamonds));
+        ASSERT_TRUE(cardHearts.isOppositeColor(&cardSpades));
+        ASSERT_TRUE(cardHearts.isOppositeColor(&cardClubs));
+    }
+
+    TEST(CardTest, PrecedesAndIsContiguousToSameSuit)
+    {
+        solitaire::Card card9(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N9);
+        solitaire::Card card10(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N10);
+        ASSERT_TRUE(card9.precedesAndContiguousTo(&card10));
+    }
+
+    TEST(CardTest, PrecedesAndIsContiguousToDifferentSuit)
+    {
+        solitaire::Card card9(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N9);
+        solitaire::Card card10(solitaire::Card::Suit::Hearts, solitaire::Card::Rank::N10);
+        ASSERT_TRUE(card9.precedesAndContiguousTo(&card10));
+    }
+
+    TEST(CardTest, DoesNotPrecedeAndIsNotContiguousTo)
+    {
+        solitaire::Card card9(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N9);
+        solitaire::Card cardJ(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::J);
+        ASSERT_FALSE(card9.precedesAndContiguousTo(&cardJ));
+    }
+
+    TEST(CardTest, DoesNotPrecedeAndIsContiguousTo)
+    {
+        solitaire::Card card9(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N9);
+        solitaire::Card card7(solitaire::Card::Suit::Clubs, solitaire::Card::Rank::N7);
+        ASSERT_FALSE(card9.precedesAndContiguousTo(&card7));
     }
 
     TEST(CardTest, GetCardCode)

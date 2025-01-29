@@ -165,9 +165,9 @@ namespace solitaire
          * @return true
          * @return false
          */
-        bool isSameSuit(const Card &card) const
+        bool isSameSuit(const Card *card) const
         {
-            return this->mSuit == card.mSuit;
+            return this->mSuit == card->mSuit;
         }
         /**
          * @brief Checks if the suit is the oppossite color from the param's suit.
@@ -182,16 +182,16 @@ namespace solitaire
          * @return false
          * @throw std::domain_error when the current suit is invalid
          */
-        bool isOppositeColor(const Card &card) const
+        bool isOppositeColor(const Card *card) const
         {
             switch (this->mSuit)
             {
             case Suit::Clubs:
             case Suit::Spades:
-                return card.mSuit == Suit::Diamonds || card.mSuit == Suit::Hearts;
+                return card->mSuit == Suit::Diamonds || card->mSuit == Suit::Hearts;
             case Suit::Diamonds:
             case Suit::Hearts:
-                return card.mSuit == Suit::Clubs || card.mSuit == Suit::Spades;
+                return card->mSuit == Suit::Clubs || card->mSuit == Suit::Spades;
             default:
                 throw std::domain_error("Card: Invalid suit value");
             }
@@ -271,6 +271,16 @@ namespace solitaire
             default:
                 throw std::domain_error("Card: Invalid rank value");
             }
+        }
+        /**
+         * @brief Checks if the cards are contiguous, and this card precedes the other
+         *
+         * @return true
+         * @return false
+         */
+        bool precedesAndContiguousTo(const Card *card) const
+        {
+            return ((int)card->getRank() - (int)this->mRank) == 1;
         }
 
     private:
