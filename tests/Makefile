@@ -4,8 +4,8 @@ SRC = ../src
 CC = g++
 C_FLAGS = -std=c++17 -c -Wall -I $(GTEST_INC) -I ../include
 LD_FLAGS = -std=c++17 -L /usr/local/lib -l $(GTEST_LIB) -l pthread
-OBJECTS = face_up_card_location.o deck.o stockpile.o wastepile.o foundation.o column.o 
-TEST_OBJECTS = tests.o test_card.o test_deck.o  test_face_up_card_location.o test_stockpile.o test_wastepile.o test_foundation.o test_column.o 
+OBJECTS = face_up_card_location.o deck.o stockpile.o wastepile.o foundation.o column.o solitaire.o
+TEST_OBJECTS = tests.o test_card.o test_deck.o  test_face_up_card_location.o test_stockpile.o test_wastepile.o test_foundation.o test_column.o test_solitaire.o
 
 TARGET = run_tests
 
@@ -27,6 +27,10 @@ test_stockpile.o: test_stockpile.cpp $(SRC)/stockpile.cpp
 test_foundation.o: test_foundation.cpp $(SRC)/foundation.cpp
 	$(CC) $(C_FLAGS) $<
 test_column.o: test_column.cpp $(SRC)/column.cpp
+	$(CC) $(C_FLAGS) $<
+test_solitaire.o: test_solitaire.cpp $(SRC)/solitaire.cpp
+	$(CC) $(C_FLAGS) $<
+solitaire.o: $(SRC)/solitaire.cpp
 	$(CC) $(C_FLAGS) $<
 column.o: $(SRC)/column.cpp
 	$(CC) $(C_FLAGS) $<
