@@ -16,5 +16,5 @@ $(BUILD)/%.o:$(SRC)/%.cpp
 $(TARGET):$(OBJECTS)
 	$(CC) $^ -o $@ $(C_FLAGS) $(LD_FLAGS)
 clean:
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) $(TARGET)
 .PHONY: all clean 

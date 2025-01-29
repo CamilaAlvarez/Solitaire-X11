@@ -7,7 +7,6 @@
 
 #include "solitaire/game_screen.hpp"
 #include "solitaire/deck.hpp"
-#include "solitaire/game.hpp"
 #include <vector>
 
 static std::vector<const solitaire::Card *> cards;
@@ -16,9 +15,8 @@ static void fillCards();
 int main(int argc, char *argv[])
 {
     fillCards();
-    solitaire::Deck *deck = new solitaire::Deck(cards);
-    solitaire::Game game(deck);
-    solitaire::GameScreen screen(&game);
+    solitaire::Deck deck(cards);
+    solitaire::GameScreen screen(&deck);
     screen.startGameScreen();
     return 0;
 }

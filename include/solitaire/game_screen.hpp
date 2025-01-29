@@ -5,7 +5,8 @@
 #define _SOLITAIRE_GAME_SCREEN_HPP
 
 #include "solitaire/card.hpp"
-#include "solitaire/game.hpp"
+#include "solitaire/solitaire.hpp"
+#include "solitaire/deck.hpp"
 #include <X11/Xlib.h>
 
 namespace solitaire
@@ -22,14 +23,34 @@ namespace solitaire
          *
          * @param game Game to be displayed
          */
-        GameScreen(Game *game) : mGame(game) {}
+        GameScreen(Deck *deck) : mDeck(deck) {}
         /**
          * @brief Starts the game, and displays it on the game screen
          *
          */
         void startGameScreen();
+        /**
+         * @brief Destroy the Game Screen object
+         *
+         */
+        ~GameScreen();
 
     private:
+        /**
+         * @brief Represents the first click on a face up location
+         *
+         */
+        struct FirstClickLocation
+        {
+            bool clicked, isMultiCard;
+            FaceUpCardLocation::FaceUpCardLocationCode location;
+            unsigned int numberOfCards;
+        };
+        /**
+         * @brief Stores the first click
+         *
+         */
+        FirstClickLocation mFromLocationClick;
         /**
          * @brief Defines the playable area of the screen where the player clicks on
          *
@@ -88,7 +109,28 @@ namespace solitaire
          */
         void init();
         /**
-         * @brief Draws the complete tableu
+         * @brief Starts the solitaire setting the columns, foundations, stock pile and waste pile
+         *
+         */
+        void setSolitaire();
+        /**
+         * @brief Builds the 7 columns
+         *
+         */
+        void buildColumns();
+        /**
+         * @brief Builds the 4 foundations
+         *
+         */
+        void buildFoundations();
+
+        /**
+         * @brief Draws a message when the Game has ended
+         *
+         */
+        void drawGameEnd();
+        /**
+         * @brief Draws the complete tableau
          *
          */
         void drawTableau();
@@ -120,6 +162,7 @@ namespace solitaire
         /**
          * @brief Draw a single column
          *
+         * @throw std::invalid_argument if the location is not a column
          */
         void drawColumn(FaceUpCardLocation::FaceUpCardLocationCode location, unsigned int hiddenCards, unsigned int topLeftX, unsigned int topLeftY);
         /**
@@ -143,28 +186,36 @@ namespace solitaire
          */
         void onClickStockPile();
         /**
-         * @brief Reacts to a click on the waste pile
-         *
-         */
-        void onClickWastePile();
-        /**
-         * @brief React to a click on a foundation
-         *
-         * @param code of the foundation
-         */
-        void onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode code);
-        /**
          * @brief Reacts to a click on a column
          *
+         * @param y y coordinate of the click
          * @param code of the column
+         * * @throw std::invalid_argument if the location is not a column
          */
-        void onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode code);
+        void onClickColumn(unsigned int y, FaceUpCardLocation::FaceUpCardLocationCode code);
+        /**
+         * @brief Handles a click on a face up card location
+         *
+         * @param code
+         * @throw std::invalid_argument if the location is invalid or a column
+         */
+        void onClickFaceUpCardLocation(FaceUpCardLocation::FaceUpCardLocationCode code);
+        /**
+         * @brief Draws the label indicating the current card in play
+         *
+         */
+        void drawCurrentCardInPlay();
         /**
          * @brief Reacts to a click on restart button
          *
          * @param columnNumber
          */
         void onClickRestart();
+        /**
+         * @brief Clears the game releasing the memory
+         *
+         */
+        void clearGame();
         /**
          * @brief X11 display
          *
@@ -191,10 +242,40 @@ namespace solitaire
          */
         unsigned long mBlack, mWhite, mRed;
         /**
-         * @brief Game being displayed on the screen
+         * @brief Deck to be used to build the game
          *
          */
-        Game *mGame;
+        Deck *mDeck;
+        /**
+         * @brief Foundations of the game
+         *
+         */
+        std::vector<Foundation *> mFoundations;
+        /**
+         * @brief Columns of the game
+         *
+         */
+        std::vector<Column *> mColumns;
+        /**
+         * @brief Waste pile of the game
+         *
+         */
+        WastePile *mWastePile;
+        /**
+         * @brief Stock pile of the game
+         *
+         */
+        StockPile *mStockPile;
+        /**
+         * @brief the solitaire game
+         *
+         */
+        Solitaire *mGame;
+        /**
+         * @brief Stores the current game status, wo we don't have to compute it all the time
+         *
+         */
+        Solitaire::GameStatus mGameStatus;
     };
 }
 #endif

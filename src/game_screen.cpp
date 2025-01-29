@@ -10,14 +10,13 @@
 #include <X11/Xos.h>
 #include <cstring>
 #include <optional>
-#include <iostream>
 
 #define SCREEN_TITLE "Camila's X11 Solitaire"
 #define ICON_NAME "SOLITAIRE"
-#define SCREEN_WIDTH 1400
+#define SCREEN_WIDTH 1060
 #define SCREEN_HEIGHT 850
-#define CARD_HEIGHT 250
-#define CARD_WIDTH 180
+#define CARD_HEIGHT 180
+#define CARD_WIDTH 130
 // Estimated char dimensions
 #define CHAR_WIDTH 5
 #define CHAR_HEIGHT 3
@@ -32,14 +31,21 @@
 #define FOUNDATION_Y STOCKPILE_Y
 #define COLUMNS_X STOCKPILE_X
 #define COLUMNS_Y (STOCKPILE_Y + 2 * SEPARATION + CARD_HEIGHT)
-#define RESTART_X 1190
-#define RESTART_Y 20
 #define RESTART_BUTTON_WIDTH 200
 #define RESTART_BUTTON_HEIGHT 50
-#define HIDDEN_CARD_HEIGHT 30
+#define RESTART_X (SCREEN_WIDTH - RESTART_BUTTON_WIDTH - 2 * NUMBER_LOCATION_RIGHT)
+#define RESTART_Y 20
+#define HIDDEN_CARD_HEIGHT 25
+#define CLICK_TEXT_X STOCKPILE_X
+#define CLICK_TEXT_Y RESTART_Y
+#define GAME_END_WIDTH (SCREEN_WIDTH / 2)
+#define GAME_END_HEIGHT (SCREEN_HEIGHT / 3)
+#define GAME_END_X ((SCREEN_WIDTH - GAME_END_WIDTH) / 2)
+#define GAME_END_Y ((SCREEN_HEIGHT - GAME_END_HEIGHT) / 2)
 
 namespace solitaire
 {
+    // Init
     void GameScreen::init()
     {
         mRed = 255 << 16;
@@ -50,7 +56,7 @@ namespace solitaire
         // Create the window
         mWindow = XCreateSimpleWindow(mDisplay, DefaultRootWindow(mDisplay), 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 5, mBlack, mWhite);
         XSetStandardProperties(mDisplay, mWindow, SCREEN_TITLE, ICON_NAME, None, NULL, 0, NULL);
-        XSelectInput(mDisplay, mWindow, ExposureMask | ButtonPressMask | KeyPressMask);
+        XSelectInput(mDisplay, mWindow, ExposureMask | ButtonPressMask);
         // Map the window to the display
         XMapWindow(mDisplay, mWindow);
         // Create the context, which will allow to customize colors and other preoperties
@@ -61,6 +67,80 @@ namespace solitaire
         XClearWindow(mDisplay, mWindow);
         // Move window to the top
         XMapRaised(mDisplay, mWindow);
+        mFromLocationClick.clicked = false;
+        mFoundations.resize(NUMBER_FOUNDATIONS);
+        mColumns.resize(NUMBER_COLUMNS);
+        setSolitaire();
+    }
+    void GameScreen::setSolitaire()
+    {
+        mDeck->shuffle();
+        mWastePile = new WastePile();
+        buildColumns();
+        buildFoundations();
+        std::vector<const Card *> stockPileCards = mDeck->extractNCards(STOCKPILE_SIZE);
+        mStockPile = new StockPile(stockPileCards);
+        mGame = new Solitaire(mWastePile, mStockPile, mFoundations, mColumns);
+        mGameStatus = Solitaire::GameStatus::Playing;
+    }
+    void GameScreen::buildColumns()
+    {
+        std::vector<const Card *> topCard, hiddenCards;
+        // Column 0
+        topCard = mDeck->extractNCards(1);
+        mColumns[0] = new Column(topCard[0], hiddenCards, FaceUpCardLocation::FaceUpCardLocationCode::Column0);
+        // Column 1
+        topCard = mDeck->extractNCards(1);
+        hiddenCards = mDeck->extractNCards(HIDDEN_CARDS_COLUMN1);
+        mColumns[1] = new Column(topCard[0], hiddenCards, FaceUpCardLocation::FaceUpCardLocationCode::Column1);
+        // Column 2
+        topCard = mDeck->extractNCards(1);
+        hiddenCards = mDeck->extractNCards(HIDDEN_CARDS_COLUMN2);
+        mColumns[2] = new Column(topCard[0], hiddenCards, FaceUpCardLocation::FaceUpCardLocationCode::Column2);
+        // Column 3
+        topCard = mDeck->extractNCards(1);
+        hiddenCards = mDeck->extractNCards(HIDDEN_CARDS_COLUMN3);
+        mColumns[3] = new Column(topCard[0], hiddenCards, FaceUpCardLocation::FaceUpCardLocationCode::Column3);
+        // Column 4
+        topCard = mDeck->extractNCards(1);
+        hiddenCards = mDeck->extractNCards(HIDDEN_CARDS_COLUMN4);
+        mColumns[4] = new Column(topCard[0], hiddenCards, FaceUpCardLocation::FaceUpCardLocationCode::Column4);
+        // Column 5
+        topCard = mDeck->extractNCards(1);
+        hiddenCards = mDeck->extractNCards(HIDDEN_CARDS_COLUMN5);
+        mColumns[5] = new Column(topCard[0], hiddenCards, FaceUpCardLocation::FaceUpCardLocationCode::Column5);
+        // Column 6
+        topCard = mDeck->extractNCards(1);
+        hiddenCards = mDeck->extractNCards(HIDDEN_CARDS_COLUMN6);
+        mColumns[6] = new Column(topCard[0], hiddenCards, FaceUpCardLocation::FaceUpCardLocationCode::Column6);
+    }
+    void GameScreen::buildFoundations()
+    {
+        mFoundations[0] = new Foundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation0);
+        mFoundations[1] = new Foundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation1);
+        mFoundations[2] = new Foundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation2);
+        mFoundations[3] = new Foundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation3);
+    }
+    // Play game
+    void GameScreen::startGameScreen()
+    {
+        XEvent ev;
+        init();
+        while (XNextEvent(mDisplay, &ev) == 0)
+        {
+            if (ev.type == ButtonPress)
+            {
+                int x = ev.xbutton.x, y = ev.xbutton.y;
+                handlePlayerClick(x, y);
+            }
+            XClearWindow(mDisplay, mWindow);
+            drawCurrentCardInPlay();
+            drawTableau();
+            drawRestartButton();
+            drawGameEnd();
+        }
+        XUnmapWindow(mDisplay, mWindow);
+        XDestroyWindow(mDisplay, mWindow);
     }
     void GameScreen::drawTableau()
     {
@@ -69,24 +149,7 @@ namespace solitaire
         drawFoundations();
         drawColumns();
     }
-    void GameScreen::startGameScreen()
-    {
-        XEvent ev;
-        init();
-        mGame->startSolitaire();
-        while (XNextEvent(mDisplay, &ev) == 0)
-        {
-            if (ev.type == ButtonPress)
-            {
-                int x = ev.xbutton.x, y = ev.xbutton.y;
-                handlePlayerClick(x, y);
-            }
-            drawTableau();
-            drawRestartButton();
-        }
-        XUnmapWindow(mDisplay, mWindow);
-        XDestroyWindow(mDisplay, mWindow);
-    }
+    // Draw screen
     void GameScreen::drawCard(const Card *card, unsigned int topLeftX, unsigned int topLeftY)
     {
         char const *cardNumberText, *cardSuitText;
@@ -190,7 +253,7 @@ namespace solitaire
     }
     void GameScreen::drawSimpleCardLocation(FaceUpCardLocation::FaceUpCardLocationCode location, unsigned int topLeftX, unsigned int topLeftY)
     {
-        std::optional<const Card *> topCard = mGame->viewTopCard(location);
+        std::optional<const Card *> topCard = mGame->getTopCard(location);
         if (topCard.has_value())
         {
             drawCard(topCard.value(), topLeftX, topLeftY);
@@ -209,7 +272,22 @@ namespace solitaire
     }
     void GameScreen::drawColumn(FaceUpCardLocation::FaceUpCardLocationCode location, unsigned int hiddenCards, unsigned int topLeftX, unsigned int topLeftY)
     {
-
+        // We need to know if the location is not a column! We just crash the game
+        switch (location)
+        {
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column0:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column1:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column2:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column3:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column4:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column5:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column6:
+            break;
+        default:
+            throw std::invalid_argument("Game Screen: in drawColumn location must be a column!");
+        }
+        // Now we draw the cards
+        unsigned int playedCardsNumber = mGame->getNumberOfPlayedCardsFrom(location);
         for (size_t i = 0; i < hiddenCards; i++)
         {
             XFillRectangle(mDisplay, mWindow, mContext, topLeftX, topLeftY, CARD_WIDTH, HIDDEN_CARD_HEIGHT);
@@ -218,8 +296,18 @@ namespace solitaire
             XSetForeground(mDisplay, mContext, mBlack);
             topLeftY += HIDDEN_CARD_HEIGHT;
         }
-
-        drawSimpleCardLocation(location, topLeftX, topLeftY);
+        if (playedCardsNumber == 0)
+        {
+            drawEmptyCardSpot(topLeftX, topLeftY);
+        }
+        else
+        {
+            for (const Card *card : mGame->getTopNCards(location, playedCardsNumber))
+            {
+                drawCard(card, topLeftX, topLeftY);
+                topLeftY += HIDDEN_CARD_HEIGHT;
+            }
+        }
     }
     void GameScreen::drawColumns()
     {
@@ -260,49 +348,113 @@ namespace solitaire
         // Draw the rectangle
         XDrawRectangle(mDisplay, mWindow, mContext, RESTART_X, RESTART_Y, RESTART_BUTTON_WIDTH, RESTART_BUTTON_HEIGHT);
     }
+    void GameScreen::drawCurrentCardInPlay()
+    {
+        const Card *clickedCard;
+        XTextItem textItem;
+        textItem.delta = 2;
+        textItem.font = None;
+        if (!mFromLocationClick.clicked)
+        {
+            return;
+        }
+        if (mFromLocationClick.isMultiCard)
+        {
+            std::vector<const Card *> cards = mGame->getTopNCards(mFromLocationClick.location, mFromLocationClick.numberOfCards);
+            clickedCard = cards.front();
+        }
+        else
+        {
+            std::optional<const Card *> card = mGame->getTopCard(mFromLocationClick.location);
+            if (!card.has_value())
+            {
+                return;
+            }
+            clickedCard = card.value();
+        }
+
+        char finalLabel[255];
+        char const *baseLabelText = "You're currently trying to move ";
+        strcpy(finalLabel, baseLabelText);
+        strcat(finalLabel, clickedCard->cardCode().c_str());
+        textItem.chars = (char *)finalLabel;
+        textItem.nchars = strlen(finalLabel);
+        XDrawText(mDisplay, mWindow, mContext, CLICK_TEXT_X, CLICK_TEXT_Y, &textItem, 1);
+    }
+    void GameScreen::drawGameEnd()
+    {
+        char const *message;
+        switch (mGameStatus)
+        {
+        case Solitaire::GameStatus::Playing:
+            return;
+        case Solitaire::GameStatus::Win:
+            message = "You win!";
+            break;
+        case Solitaire::GameStatus::Lose:
+            message = "You lose";
+            break;
+        }
+        XTextItem textItem;
+        textItem.delta = 2;
+        textItem.font = None;
+        textItem.chars = (char *)message;
+        textItem.nchars = strlen(message);
+        XSetForeground(mDisplay, mContext, mWhite);
+        XFillRectangle(mDisplay, mWindow, mContext, GAME_END_X, GAME_END_Y, GAME_END_WIDTH, GAME_END_HEIGHT);
+        XSetForeground(mDisplay, mContext, mBlack);
+        XDrawRectangle(mDisplay, mWindow, mContext, GAME_END_X, GAME_END_Y, GAME_END_WIDTH, GAME_END_HEIGHT);
+        XDrawText(mDisplay, mWindow, mContext, GAME_END_X + GAME_END_WIDTH / 2 - (strlen(message) * CHAR_WIDTH), GAME_END_Y + GAME_END_Y / 2 - CHAR_HEIGHT, &textItem, 1);
+    }
+    // Handle clicks
     void GameScreen::handlePlayerClick(unsigned int x, unsigned int y)
     {
         ClickPosition position = parsePlayerClick(x, y);
+        if ((mGameStatus == Solitaire::GameStatus::Win || mGameStatus == Solitaire::GameStatus::Lose) && position != ClickPosition::RestartButton)
+        {
+            return;
+        }
+
         switch (position)
         {
         case ClickPosition::StockPile:
             onClickStockPile();
             break;
         case ClickPosition::WastePile:
-            onClickWastePile();
+            onClickFaceUpCardLocation(FaceUpCardLocation::FaceUpCardLocationCode::WastePile);
             break;
         case ClickPosition::Foundation0:
-            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation0);
+            onClickFaceUpCardLocation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation0);
             break;
         case ClickPosition::Foundation1:
-            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation1);
+            onClickFaceUpCardLocation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation1);
             break;
         case ClickPosition::Foundation2:
-            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation2);
+            onClickFaceUpCardLocation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation2);
             break;
         case ClickPosition::Foundation3:
-            onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation3);
+            onClickFaceUpCardLocation(FaceUpCardLocation::FaceUpCardLocationCode::Foundation3);
             break;
         case ClickPosition::Column0:
-            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column0);
+            onClickColumn(y, FaceUpCardLocation::FaceUpCardLocationCode::Column0);
             break;
         case ClickPosition::Column1:
-            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column1);
+            onClickColumn(y, FaceUpCardLocation::FaceUpCardLocationCode::Column1);
             break;
         case ClickPosition::Column2:
-            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column2);
+            onClickColumn(y, FaceUpCardLocation::FaceUpCardLocationCode::Column2);
             break;
         case ClickPosition::Column3:
-            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column3);
+            onClickColumn(y, FaceUpCardLocation::FaceUpCardLocationCode::Column3);
             break;
         case ClickPosition::Column4:
-            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column4);
+            onClickColumn(y, FaceUpCardLocation::FaceUpCardLocationCode::Column4);
             break;
         case ClickPosition::Column5:
-            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column5);
+            onClickColumn(y, FaceUpCardLocation::FaceUpCardLocationCode::Column5);
             break;
         case ClickPosition::Column6:
-            onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode::Column6);
+            onClickColumn(y, FaceUpCardLocation::FaceUpCardLocationCode::Column6);
             break;
         case ClickPosition::RestartButton:
             onClickRestart();
@@ -318,21 +470,123 @@ namespace solitaire
     }
     void GameScreen::onClickStockPile()
     {
+        mFromLocationClick.clicked = false;
         if (mGame->isStockPileEmpty())
         {
-            // refresh stockpile
+            mGame->refreshStockPile();
         }
         else
         {
-            mGame->revealTopStockPile();
+            mGame->revealFromStockpile();
         }
     }
-    void GameScreen::onClickWastePile() {}
-    void GameScreen::onClickFoundation(FaceUpCardLocation::FaceUpCardLocationCode code) {}
-    void GameScreen::onClickColumn(FaceUpCardLocation::FaceUpCardLocationCode code) {}
+    void GameScreen::onClickFaceUpCardLocation(FaceUpCardLocation::FaceUpCardLocationCode code)
+    {
+        // We need to know if the location is not a column! We just crash the game
+        switch (code)
+        {
+        case FaceUpCardLocation::FaceUpCardLocationCode::WastePile:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation0:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation1:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation2:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Foundation3:
+            break;
+        default:
+            throw std::invalid_argument("Game Screen: in onClickFaceUpCardLocation location must be  valid and not a column!");
+        }
+        if (mFromLocationClick.clicked && (mFromLocationClick.isMultiCard || code == FaceUpCardLocation::FaceUpCardLocationCode::WastePile || mFromLocationClick.location == code))
+        {
+            mFromLocationClick.clicked = false;
+        }
+        else if (mFromLocationClick.clicked)
+        {
+            if (mGame->moveCard(mFromLocationClick.location, code))
+            {
+                // Update game status after moving card succesfully
+                mGameStatus = mGame->checkGameStatus();
+            }
+            mFromLocationClick.clicked = false;
+        }
+        else if (!mFromLocationClick.clicked)
+        {
+            mFromLocationClick.clicked = true;
+            mFromLocationClick.isMultiCard = false;
+            mFromLocationClick.location = code;
+        }
+    }
+    void GameScreen::onClickColumn(unsigned int y, FaceUpCardLocation::FaceUpCardLocationCode code)
+    {
+        // We need to know if the location is not a column! We just crash the game
+        switch (code)
+        {
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column0:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column1:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column2:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column3:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column4:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column5:
+        case FaceUpCardLocation::FaceUpCardLocationCode::Column6:
+            break;
+        default:
+            throw std::invalid_argument("Game Screen: in onClickColumn location must be a column!");
+        }
+        if (mFromLocationClick.clicked && mFromLocationClick.location == code)
+        {
+            mFromLocationClick.clicked = false;
+            return;
+        }
+        int clickedCard = 1;
+        int numberHiddenCards = mGame->getNumberOfHiddenCards(code);
+        int numberPlayedCards = mGame->getNumberOfPlayedCardsFrom(code);
+        int initialTop = (numberHiddenCards + numberPlayedCards - 1) * HIDDEN_CARD_HEIGHT + COLUMNS_Y;
+        // we clicked on top of the top card
+        if (y < initialTop)
+        {
+            while (y < initialTop)
+            {
+                clickedCard++;
+                initialTop -= HIDDEN_CARD_HEIGHT;
+            }
+        }
+
+        if (mFromLocationClick.clicked && clickedCard == 1 && mFromLocationClick.isMultiCard)
+        {
+            if (mGame->moveNCards(mFromLocationClick.location, code, mFromLocationClick.numberOfCards))
+            {
+                // Update game status after moving card succesfully
+                mGameStatus = mGame->checkGameStatus();
+            }
+            mFromLocationClick.clicked = false;
+        }
+        else if (mFromLocationClick.clicked && clickedCard == 1 && !mFromLocationClick.isMultiCard)
+        {
+            if (mGame->moveCard(mFromLocationClick.location, code))
+            {
+                // Update game status after moving card succesfully
+                mGameStatus = mGame->checkGameStatus();
+            }
+            mFromLocationClick.clicked = false;
+        }
+        else if (!mFromLocationClick.clicked && clickedCard == 1)
+        {
+            mFromLocationClick.clicked = true;
+            mFromLocationClick.location = code;
+            mFromLocationClick.isMultiCard = false;
+        }
+        else if (!mFromLocationClick.clicked && clickedCard > 1)
+        {
+            mFromLocationClick.clicked = true;
+            mFromLocationClick.location = code;
+            mFromLocationClick.isMultiCard = true;
+            mFromLocationClick.numberOfCards = clickedCard;
+        }
+    }
     void GameScreen::onClickRestart()
     {
-        mGame->restartSolitaire();
+        mFromLocationClick.clicked = false;
+        mDeck->recoverAllCards();
+        clearGame();
+        setSolitaire();
     }
     GameScreen::ClickPosition GameScreen::parsePlayerClick(unsigned int x, unsigned int y)
     {
@@ -360,38 +614,45 @@ namespace solitaire
         {
             return ClickPosition::Foundation3;
         }
-        else if (isClickInBox(x, y, COLUMNS_X, COLUMNS_Y, CARD_WIDTH, CARD_HEIGHT))
+        int numberPlayerCards = mGame->getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode::Column0);
+        if (isClickInBox(x, y, COLUMNS_X, COLUMNS_Y, CARD_WIDTH, (CARD_HEIGHT + numberPlayerCards * HIDDEN_CARD_HEIGHT)))
         {
             return ClickPosition::Column0;
         }
         // For the rest of the columns I need to move both x and y, because of the hidden cards
         int numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column1);
-        if (isClickInBox(x, y, COLUMNS_X + CARD_WIDTH + SEPARATION, COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        numberPlayerCards = mGame->getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode::Column1);
+        if (isClickInBox(x, y, COLUMNS_X + CARD_WIDTH + SEPARATION, COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, (CARD_HEIGHT + numberPlayerCards * HIDDEN_CARD_HEIGHT)))
         {
             return ClickPosition::Column1;
         }
         numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column2);
-        if (isClickInBox(x, y, COLUMNS_X + 2 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        numberPlayerCards = mGame->getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode::Column2);
+        if (isClickInBox(x, y, COLUMNS_X + 2 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, (CARD_HEIGHT + numberPlayerCards * HIDDEN_CARD_HEIGHT)))
         {
             return ClickPosition::Column2;
         }
         numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column3);
-        if (isClickInBox(x, y, COLUMNS_X + 3 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        numberPlayerCards = mGame->getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode::Column3);
+        if (isClickInBox(x, y, COLUMNS_X + 3 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, (CARD_HEIGHT + numberPlayerCards * HIDDEN_CARD_HEIGHT)))
         {
             return ClickPosition::Column3;
         }
         numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column4);
-        if (isClickInBox(x, y, COLUMNS_X + 4 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        numberPlayerCards = mGame->getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode::Column4);
+        if (isClickInBox(x, y, COLUMNS_X + 4 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, (CARD_HEIGHT + numberPlayerCards * HIDDEN_CARD_HEIGHT)))
         {
             return ClickPosition::Column4;
         }
         numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column5);
-        if (isClickInBox(x, y, COLUMNS_X + 5 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        numberPlayerCards = mGame->getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode::Column5);
+        if (isClickInBox(x, y, COLUMNS_X + 5 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, (CARD_HEIGHT + numberPlayerCards * HIDDEN_CARD_HEIGHT)))
         {
             return ClickPosition::Column5;
         }
         numberHiddenCards = mGame->getNumberOfHiddenCards(FaceUpCardLocation::FaceUpCardLocationCode::Column6);
-        if (isClickInBox(x, y, COLUMNS_X + 6 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, CARD_HEIGHT))
+        numberPlayerCards = mGame->getNumberOfPlayedCardsFrom(FaceUpCardLocation::FaceUpCardLocationCode::Column6);
+        if (isClickInBox(x, y, COLUMNS_X + 6 * (CARD_WIDTH + SEPARATION), COLUMNS_Y + numberHiddenCards * HIDDEN_CARD_HEIGHT, CARD_WIDTH, (CARD_HEIGHT + numberPlayerCards * HIDDEN_CARD_HEIGHT)))
         {
             return ClickPosition::Column6;
         }
@@ -400,5 +661,24 @@ namespace solitaire
             return ClickPosition::RestartButton;
         }
         return ClickPosition::NoLocation;
+    }
+    // Clear game
+    void GameScreen::clearGame()
+    {
+        delete mGame;
+        delete mWastePile;
+        delete mStockPile;
+        for (Foundation *f : mFoundations)
+        {
+            delete f;
+        }
+        for (Column *c : mColumns)
+        {
+            delete c;
+        }
+    }
+    GameScreen::~GameScreen()
+    {
+        clearGame();
     }
 }
